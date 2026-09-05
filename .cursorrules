@@ -1,0 +1,30 @@
+You are working on DigiDoc, a doctor-supervised digital GP for Indonesian primary care.
+Read docs/ONE-PAGER.md and digidoc/models.py before writing anything.
+
+Non-negotiables (never violate, never "improve" around):
+1. A licensed doctor signs every clinical output. There is no path from patient message to
+   patient advice that skips the doctor, except the static safety-net messages in
+   digidoc/gate/safety_net.py.
+2. Red flags live in digidoc/gate/rules.py as code. The model may never remove a gate hit
+   or change a route. If you think a rule is missing, add a rule and a fixture; do not
+   put the logic in a prompt.
+3. Every clinical claim in a draft carries a citation to a chunk in corpus/. No citation,
+   no claim.
+4. Every failure (model error, timeout, empty retrieval, parse failure) degrades toward
+   more human involvement: intake stays open, drafting turns off, case goes to the
+   doctor queue with the raw intake. Never silently hold a case. Never emit a partial draft.
+5. The Intake object in digidoc/models.py is the contract between stages. Downstream
+   stages read Intake + GateResult, never the raw message, for clinical decisions.
+
+Conventions:
+- Python 3.12, FastAPI, Pydantic v2, stdlib where possible. No LangChain, no LlamaIndex.
+- Model calls go through digidoc/llm.py only. It has MODEL_MODE=real|mock|off.
+  mock returns canned outputs from fixtures so evals run without a key; off simulates outage.
+- All Bahasa Indonesia patient-facing text is static in safety_net.py or reviewed
+  templates. The model writes drafts for the doctor, not messages for the patient.
+- Every function that calls a model logs: input hash, model, latency, output hash, to
+  data/log.jsonl.
+- Tests are fixtures in fixtures/scenarios.json. Add a fixture before adding behaviour.
+- Keep files small. One module per stage. No file over ~250 lines.
+- Do not add features not in the current step. If something seems needed, write it as a
+  TODO comment and stop.

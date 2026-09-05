@@ -1,0 +1,9 @@
+# Local secrets — never commit
+digidoc/local_config.py
+.env
+
+# Runtime artefacts
+data/
+__pycache__/
+*.pyc
+.venv/

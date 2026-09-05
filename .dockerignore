@@ -1,0 +1,12 @@
+.git
+.venv
+__pycache__
+*.pyc
+data/
+.env
+.env.*
+digidoc/local_config.py
+site/node_modules
+site/dist
+*.md
+!README.md

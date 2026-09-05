@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: digidoc
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn digidoc.console.app:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: MODEL_MODE
+        value: mock
+      - key: PYTHON_VERSION
+        value: "3.12.8"

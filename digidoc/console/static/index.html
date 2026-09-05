@@ -1,0 +1,636 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>DigiDoc — Konsol dokter</title>
+<script>
+// Applied before first paint: resolving the theme in the main script instead would show a
+// white console for a frame, which is exactly what someone on a night shift is avoiding.
+(function(){
+  var saved = localStorage.getItem("digidoc-theme");
+  var dark = saved ? saved === "dark"
+    : window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  if(dark) document.documentElement.dataset.theme = "dark";
+})();
+</script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F3F5F4;--paper-0:rgba(243,245,244,0);
+  --surface:#FFFFFF;--surface-2:#FCFDFC;--surface-0:rgba(255,255,255,0);--surface-hover:#FCFDFD;
+  --ink:#141B24;--ink-2:#5B6470;--ink-3:#8A929C;
+  --rule:#E4E7EA;--rule-2:#EEF0F2;--rule-hover:#C9CFD5;
+  --well:#F4F5F3;--teal:#177B6F;--teal-dark:#0F5F55;--teal-050:#E8F3F1;
+  --conf-1:#2A9A8B;--conf-low:#C79034;
+  --brand-1:#1E8C7E;--brand-2:#0F5F55;--on-brand:#FFFFFF;
+  --btn-bg:#177B6F;--btn-bg-hover:#0F5F55;--btn-fg:#FFFFFF;
+  --top-bg:rgba(255,255,255,.86);
+  --danger-bg:#FEF7F6;--danger-br:#EBBFB9;
+  --caret:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%235B6470' stroke-width='1.5'/%3E%3C/svg%3E");
+  --r-emergency-bg:#FBE3E1;--r-emergency:#8E1E14;
+  --r-urgent-bg:#FBEDD2;--r-urgent:#7A4A05;--r-urgent-br:#E7CE9B;
+  --r-handoff-bg:#EBE6F8;--r-handoff:#4A3A8A;
+  --r-review-bg:#E6ECF3;--r-review:#2F4A6B;
+  --r-specialist-bg:#DFF0EC;--r-specialist:#135F55;
+  --r-routine-bg:#E6F1E1;--r-routine:#2F5E22;
+  --sh-1:0 1px 2px rgba(20,27,36,.05);
+  --sh-2:0 1px 3px rgba(20,27,36,.06),0 6px 16px -8px rgba(20,27,36,.16);
+  --sh-3:-12px 0 32px -12px rgba(20,27,36,.22);
+  --sh-modal:0 18px 48px rgba(20,27,36,.18);
+  --scrim:rgba(20,27,36,.34);
+}
+/* Dark is a re-tint of the same palette, not a second design: every rule below still reads
+   its colour from these variables, so the two themes cannot drift apart. Route colours keep
+   their hue and swap luminance, because the doctor learns them as fixed signals. */
+[data-theme="dark"]{
+  --paper:#0F141A;--paper-0:rgba(15,20,26,0);
+  --surface:#171E26;--surface-2:#1A222B;--surface-0:rgba(23,30,38,0);--surface-hover:#1E2731;
+  --ink:#E7ECF0;--ink-2:#A7B1BC;--ink-3:#7C8792;
+  --rule:#2A333E;--rule-2:#222A34;--rule-hover:#3A4550;
+  --well:#131A21;--teal:#2FA396;--teal-dark:#5DC6B8;--teal-050:#12302C;
+  --conf-1:#2FA396;--conf-low:#C79034;
+  --brand-1:#2AA396;--brand-2:#14766A;--on-brand:#FFFFFF;
+  /* Dark inverts the primary button: white on bright teal only reaches ~2.9:1, so the
+     bright teal carries near-black text instead. */
+  --btn-bg:#3DB5A6;--btn-bg-hover:#55C7B8;--btn-fg:#08120F;
+  --top-bg:rgba(23,30,38,.86);
+  --danger-bg:#2A1512;--danger-br:#4A2320;
+  --caret:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23A7B1BC' stroke-width='1.5'/%3E%3C/svg%3E");
+  --r-emergency-bg:#3A1714;--r-emergency:#FF9C90;
+  --r-urgent-bg:#33240A;--r-urgent:#E8B765;--r-urgent-br:#4A3A16;
+  --r-handoff-bg:#241E3D;--r-handoff:#A99BE8;
+  --r-review-bg:#17242F;--r-review:#8FB4D9;
+  --r-specialist-bg:#10302B;--r-specialist:#6FCBBB;
+  --r-routine-bg:#172913;--r-routine:#8FCF7C;
+  --sh-1:0 1px 2px rgba(0,0,0,.40);
+  --sh-2:0 1px 3px rgba(0,0,0,.40),0 6px 16px -8px rgba(0,0,0,.60);
+  --sh-3:-12px 0 32px -12px rgba(0,0,0,.60);
+  --sh-modal:0 18px 48px rgba(0,0,0,.55);
+  --scrim:rgba(0,0,0,.58);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--paper);color:var(--ink);font:13px/1.55 "IBM Plex Sans",system-ui,sans-serif;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+button{font:inherit;color:inherit;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:6px 12px;cursor:pointer;box-shadow:var(--sh-1);transition:border-color .12s,background .12s,box-shadow .12s,transform .12s}
+button:hover{border-color:var(--rule-hover);background:var(--surface-hover)}
+button:active{transform:translateY(1px)}
+button:focus-visible,a:focus-visible,select:focus-visible,[role=button]:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+button.primary{background:var(--btn-bg);border-color:var(--btn-bg);color:var(--btn-fg);font-weight:500;box-shadow:0 1px 2px rgba(23,123,111,.30)}
+button.primary:hover{background:var(--btn-bg-hover);border-color:var(--btn-bg-hover)}
+button[disabled]{opacity:.45;cursor:default;box-shadow:none;transform:none}
+select{font:inherit;padding:5px 26px 5px 9px;border:1px solid var(--rule);border-radius:6px;background:var(--surface) var(--caret) no-repeat right 9px center;appearance:none;cursor:pointer;box-shadow:var(--sh-1)}
+select:hover{border-color:var(--rule-hover)}
+
+.top{display:flex;align-items:center;gap:14px;height:52px;padding:0 20px;border-bottom:1px solid var(--rule);background:var(--top-bg);backdrop-filter:saturate(160%) blur(8px);position:relative;z-index:3}
+.top .brand{display:flex;align-items:center;gap:9px;font-weight:600;font-size:15px;letter-spacing:-.01em}
+.top .brand::before{content:"D";display:grid;place-items:center;width:24px;height:24px;border-radius:7px;background:linear-gradient(150deg,var(--brand-1),var(--brand-2));color:var(--on-brand);font-size:13px;font-weight:600}
+.top .clinic{color:var(--ink-2);padding-left:14px;border-left:1px solid var(--rule)}
+.top .spacer{flex:1}
+.top label{display:flex;align-items:center;gap:7px;color:var(--ink-3);font-size:12px}
+.theme{display:grid;place-items:center;width:30px;height:28px;padding:0;color:var(--ink-2)}
+.theme svg{width:15px;height:15px;display:block}
+.theme .sun{display:none}
+[data-theme="dark"] .theme .sun{display:block}
+[data-theme="dark"] .theme .moon{display:none}
+
+.shell{display:grid;grid-template-columns:296px 1fr;height:calc(100% - 52px)}
+.queue{border-right:1px solid var(--rule);overflow:auto;background:var(--surface);scrollbar-width:thin}
+.queue h2{display:flex;align-items:center;gap:8px;margin:0;padding:16px 16px 10px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);position:sticky;top:0;background:linear-gradient(var(--surface) 70%,var(--surface-0));z-index:1}
+.queue h2 .count{padding:1px 7px;border-radius:999px;background:var(--well);color:var(--ink-2);letter-spacing:0;font-size:11px}
+.queue h2 .count:empty{display:none}
+.queue .row{position:relative;display:grid;grid-template-columns:1fr auto;gap:3px 8px;padding:11px 16px 12px 18px;border-bottom:1px solid var(--rule-2);cursor:pointer;transition:background .12s}
+.queue .row::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:transparent}
+.queue .row:hover{background:var(--well)}
+.queue .row.active{background:var(--teal-050)}
+.queue .row.active::after{content:"";position:absolute;right:0;top:0;bottom:0;width:2px;background:var(--teal)}
+.queue .row.emergency::before{background:var(--r-emergency)}
+.queue .row.urgent_same_day::before{background:var(--r-urgent)}
+.queue .row.human_handoff_now::before{background:var(--r-handoff)}
+.queue .row.specialist_route::before{background:var(--r-specialist)}
+.queue .row .id{font-weight:600;letter-spacing:-.01em}
+.queue .row .who{color:var(--ink-2);grid-column:1/-1;font-size:12px}
+.queue .row .age{color:var(--ink-3);font-size:11px}
+.queue .empty{padding:28px 18px;color:var(--ink-3);line-height:1.6}
+
+.case{overflow:auto;padding:26px 34px 24px;max-width:940px;scrollbar-width:thin}
+.case>*{animation:rise .22s ease both}
+@keyframes rise{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.case h1{margin:0 0 6px;font-size:21px;font-weight:600;letter-spacing:-.015em}
+.case .meta{color:var(--ink-3);margin-bottom:12px;font-size:12px}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:600;letter-spacing:.01em;vertical-align:middle;box-shadow:inset 0 0 0 1px rgba(20,27,36,.05)}
+.badge.emergency{background:var(--r-emergency-bg);color:var(--r-emergency)}
+.badge.urgent_same_day{background:var(--r-urgent-bg);color:var(--r-urgent)}
+.badge.human_handoff_now{background:var(--r-handoff-bg);color:var(--r-handoff)}
+.badge.clinician_review{background:var(--r-review-bg);color:var(--r-review)}
+.badge.specialist_route{background:var(--r-specialist-bg);color:var(--r-specialist)}
+.badge.routine{background:var(--r-routine-bg);color:var(--r-routine)}
+.badge.mode{background:var(--well);color:var(--ink-2)}
+.badge.abstain{background:var(--r-urgent-bg);color:var(--r-urgent)}
+.badge.emergency::before,.badge.urgent_same_day::before,.badge.human_handoff_now::before,
+.badge.clinician_review::before,.badge.specialist_route::before,.badge.routine::before{
+  content:"";width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.7}
+.hits{display:inline;color:var(--ink-3);margin-left:10px;font-size:11.5px;letter-spacing:.02em}
+
+.banner{margin:0 0 18px;padding:11px 14px;border:1px solid var(--r-urgent-br);border-left:3px solid var(--r-urgent);border-radius:8px;background:var(--r-urgent-bg);color:var(--r-urgent);font-weight:500}
+
+section{margin-top:22px;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:16px 18px 18px;box-shadow:var(--sh-1)}
+section h2{margin:0 0 10px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+section .draft h2,section .list+h2{text-transform:uppercase}
+.well{background:var(--well);border:1px solid var(--rule-2);border-radius:8px;padding:12px 14px;white-space:pre-wrap;line-height:1.6}
+.well.danger{background:var(--danger-bg);border-color:var(--danger-br);color:var(--r-emergency)}
+.well .cap{display:block;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3);margin-bottom:5px}
+
+.rule{border:1px solid var(--rule);border-radius:8px;padding:11px 14px;margin-bottom:8px;display:grid;grid-template-columns:1fr auto;gap:3px 16px;background:linear-gradient(var(--surface),var(--surface-2));transition:border-color .12s,box-shadow .12s}
+.rule:hover{border-color:var(--rule-hover);box-shadow:var(--sh-1)}
+.rule .rid{font-size:10.5px;font-weight:600;letter-spacing:.06em;color:var(--ink-3)}
+.rule .name{font-weight:600;grid-column:1}
+.rule .why{color:var(--ink-2);grid-column:1}
+.rule .src{font-size:10.5px;color:var(--ink-3);grid-column:1;letter-spacing:.02em}
+.rule .route{grid-column:2;grid-row:1/span 4;align-self:start}
+
+.fields{display:grid;grid-template-columns:180px 1fr 120px;gap:0 16px;align-items:center}
+.fields>span{padding:6px 0;border-bottom:1px solid var(--rule-2)}
+.fields>span:nth-last-child(-n+3){border-bottom:0}
+.fields .k{color:var(--ink-3)}
+.fields .v{font-weight:500}
+.conf{height:5px;background:var(--rule-2);border-radius:3px;overflow:hidden;align-self:center}
+.conf i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--conf-1),var(--teal))}
+.conf.low i{background:linear-gradient(90deg,var(--conf-low),var(--r-urgent))}
+.list{margin:0;padding-left:18px}
+.list li{margin:5px 0}
+.list li::marker{color:var(--ink-3)}
+
+.draft p{max-width:70ch;margin:8px 0}
+.draft h2{margin-top:18px}
+.cite{display:inline-block;min-width:17px;height:17px;line-height:15px;text-align:center;font-size:10px;font-weight:600;border:1px solid var(--rule);border-radius:5px;margin-left:4px;vertical-align:super;cursor:pointer;background:var(--surface);color:var(--ink-2);transition:all .12s}
+.cite:hover{border-color:var(--teal);background:var(--teal-050);color:var(--teal-dark)}
+.soap{display:grid;grid-template-columns:28px 1fr;gap:8px 12px;max-width:70ch}
+.soap b{font-weight:600;color:var(--paper);background:var(--ink-3);border-radius:5px;height:20px;display:grid;place-items:center;font-size:11px}
+.codes span{display:inline-flex;align-items:center;border:1px solid var(--rule);border-radius:6px;padding:3px 9px;margin:0 6px 6px 0;font-size:12px;background:var(--well)}
+.codes span b{font-weight:600;margin-right:7px;color:var(--teal-dark)}
+
+.actions{position:sticky;bottom:0;display:flex;gap:8px;align-items:center;padding:14px 0;margin-top:22px;border-top:1px solid var(--rule);background:linear-gradient(var(--paper-0),var(--paper) 28%)}
+.actions .spacer{flex:1}
+button.busy{opacity:1;display:inline-flex;align-items:center;gap:7px}
+.spin{width:11px;height:11px;flex:none;border-radius:50%;border:1.5px solid currentColor;border-top-color:transparent;
+  animation:spin .65s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:2s}}
+.signed{border-left:3px solid var(--teal);padding-left:12px;color:var(--ink-2)}
+.signed-body{border-left:3px solid var(--teal);padding-left:14px;margin-left:-1px}
+
+.log{color:var(--ink-2)}
+.log div{padding:6px 0;border-bottom:1px solid var(--rule-2)}
+.log div:last-child{border-bottom:0}
+.log time{display:inline-block;width:64px;color:var(--ink-3);font-size:11.5px}
+
+.panel{position:fixed;top:52px;right:0;bottom:0;width:380px;background:var(--surface);border-left:1px solid var(--rule);box-shadow:var(--sh-3);transform:translateX(102%);transition:transform .2s cubic-bezier(.2,.7,.3,1);padding:22px;overflow:auto;z-index:4}
+.panel.open{transform:none}
+.panel h3{margin:0 0 4px;font-size:15px;padding-right:80px;letter-spacing:-.01em}
+.panel .src{font-size:11px;color:var(--ink-3);margin-bottom:14px;letter-spacing:.04em;text-transform:uppercase;font-weight:600}
+.panel .close{position:absolute;top:14px;right:14px}
+#panelBody{line-height:1.65;color:var(--ink-2)}
+.langnote{margin:0 0 10px;padding:5px 9px;border-radius:6px;background:var(--well);color:var(--ink-3);font-size:11.5px;display:inline-block}
+.langnote[hidden]{display:none}
+.ask{border:1px solid var(--rule);border-radius:12px;padding:0;box-shadow:var(--sh-modal);
+  background:var(--surface);color:var(--ink);width:min(420px,calc(100vw - 32px))}
+.ask::backdrop{background:var(--scrim)}
+.ask form{padding:20px;margin:0}
+.ask h3{margin:0 0 6px;font-size:15px;letter-spacing:-.01em}
+.ask .warn{margin:0 0 14px;color:var(--r-urgent);font-size:12.5px;line-height:1.5}
+.ask .cap{display:block;margin-bottom:6px}
+.ask input,.ask textarea{width:100%;box-sizing:border-box;font:inherit;color:inherit;padding:9px 11px;
+  border:1px solid var(--rule);border-radius:8px;background:var(--surface);outline:none}
+.ask input:focus,.ask textarea:focus{border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-050)}
+.ask textarea{resize:vertical;line-height:1.6}
+.ask .err{margin:8px 0 0;color:var(--r-emergency);font-size:12px}
+.ask .row{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+@media (prefers-reduced-motion:reduce){.panel{transition:none}.case>*{animation:none}}
+@media (max-width:820px){.shell{grid-template-columns:1fr}.queue{display:none}.case{padding:16px}.panel{width:100%}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <span class="brand">DigiDoc</span>
+  <span class="clinic">Klinik Sehat Sejahtera · Semarang</span>
+  <span class="spacer"></span>
+  <label><span id="languageLabel">Bahasa</span> <select id="language"><option value="id">Bahasa</option><option value="en">English</option></select></label>
+  <label><span id="modelLabel">Model</span> <select id="modelMode"><option value="real">real</option><option value="mock" selected>mock</option><option value="off">nonaktif</option></select></label>
+  <button class="theme" id="theme">
+    <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+    <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2M12 19.4v2M2.6 12h2M19.4 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4"/></svg>
+  </button>
+  <button id="seed">Seed demo</button>
+</header>
+
+<div class="shell">
+  <aside class="queue">
+    <h2><span id="queueTitle">Antrian</span><span class="count" id="queueCount"></span></h2>
+    <div id="queue"></div>
+  </aside>
+  <main class="case" id="case"></main>
+</div>
+
+<dialog class="ask" id="ask">
+  <form method="dialog" id="askForm">
+    <h3 id="askTitle"></h3>
+    <p class="warn" id="askWarn" hidden></p>
+    <label class="cap" id="askLabel" for="askInput"></label>
+    <input id="askInput" autocomplete="off">
+    <textarea id="askArea" rows="6" hidden></textarea>
+    <p class="err" id="askErr" hidden></p>
+    <div class="row">
+      <button type="button" id="askCancel"></button>
+      <button type="submit" class="primary" id="askOk"></button>
+    </div>
+  </form>
+</dialog>
+
+<aside class="panel" id="panel" aria-hidden="true">
+  <button class="close" id="panelClose" aria-label="Tutup">Tutup</button>
+  <h3 id="panelTitle"></h3>
+  <div class="src" id="panelSrc"></div>
+  <div class="langnote" id="panelNote" hidden></div>
+  <div id="panelBody" style="white-space:pre-wrap"></div>
+</aside>
+
+<script>
+// Data comes from the FastAPI routes; the render functions below remain the design.
+let language = localStorage.getItem("digidoc-language") || "id";
+const COPY = {
+  id:{title:"DigiDoc — Konsol dokter",language:"Bahasa",queue:"Antrian",seed:"Seed demo",close:"Tutup",
+    empty:"Belum ada kasus. Kirim pesan dari halaman pasien atau tekan Seed demo.",choose:"Pilih kasus di antrian.",
+    routes:{emergency:"Darurat",urgent_same_day:"Hari ini",human_handoff_now:"Tim manusia",clinician_review:"Tinjauan dokter",specialist_route:"Rujuk spesialis",routine:"Rutin"},
+    noDraft:{emergency:"pasien sudah diarahkan ke IGD.",urgent_same_day:"pasien sudah diarahkan ke fasilitas kesehatan hari ini.",human_handoff_now:"tim sudah dihubungi untuk kontak langsung."},
+    noDraftPrefix:"Tidak ada draf —",modelOff:"Model nonaktif",rawOnly:"Draf tidak dibuat. Data intake mentah ada di atas.",
+    plan:"Rencana",summary:"Ringkasan",confidence:"keyakinan",differentials:"Diagnosis banding",examine:"Yang perlu diperiksa / diperiksa lab",
+    soap:"SOAP",icd:"ICD-10",consultResult:"Hasil konsul spesialis",criteria:"kriteria terpenuhi",referral:"Rujukan",
+    override:"Tingkat rujukan ditetapkan oleh aturan, bukan model",modelSuggested:"model menyarankan",startNow:"Mulai sekarang",referralPoints:"Poin surat rujukan",
+    degraded:"Drafting mati. Kasus masuk antrian tanpa draf.",case:"Kasus",patientMessage:"Pesan pasien",gate:"Hasil gate",
+    noRules:"tidak ada aturan terpicu",noRulesDraft:"Tidak ada aturan terpicu. Draf diizinkan.",notes:"Catatan untuk dokter",
+    prescreen:"Jawaban pra-skrining",structured:"Data terstruktur",unparsed:"Tidak terurai — teks asli",injected:"Teks yang ditujukan ke sistem (diabaikan oleh gate)",
+    doctorDraft:"Draf untuk dokter",accept:"Terima",edit:"Ubah",reject:"Tolak",consult:"Konsul spesialis",sign:"Tanda tangan",history:"Riwayat tindakan",
+    signed:"Ditandatangani oleh",at:"pada",withoutDraft:"tanpa draf",sourceError:"Sumber tidak dapat dimuat.",actionError:"Tindakan gagal.",
+    seedError:"Demo tidak dapat dimuat.",modeError:"Mode model tidak dapat diubah.",
+    noKey:"Mode real dipilih, tetapi tidak ada API key. Isi OPENAI_API_KEY di digidoc/local_config.py, lalu pilih real lagi. Tanpa key, kasus tetap masuk antrian tanpa draf.",
+    signTitle:"Tanda tangani kasus",signWarn:"Setelah ditandatangani, kasus dibekukan dan tidak bisa diubah lagi.",
+    signField:"Nama dokter",signConfirm:"Tanda tangani",signPlaceholder:"mis. Sari",
+    editTitle:"Ubah assessment",editField:"Assessment untuk dokter",editConfirm:"Simpan",
+    cancel:"Batal",required:"Nama dokter wajib diisi.",working:"Memproses…",consulting:"Menjalankan konsul…",
+    themeToDark:"Mode gelap",themeToLight:"Mode terang"},
+  en:{title:"DigiDoc — Doctor console",language:"Language",queue:"Queue",seed:"Seed demo",close:"Close",
+    empty:"No cases yet. Send a message from the patient page or select Seed demo.",choose:"Select a case from the queue.",
+    routes:{emergency:"Emergency",urgent_same_day:"Same day",human_handoff_now:"Human team",clinician_review:"Doctor review",specialist_route:"Specialist referral",routine:"Routine"},
+    noDraft:{emergency:"the patient was directed to emergency care.",urgent_same_day:"the patient was directed to a healthcare facility today.",human_handoff_now:"the team was contacted for direct follow-up."},
+    noDraftPrefix:"No draft —",modelOff:"Model off",rawOnly:"No draft was created. Raw intake data is shown above.",
+    plan:"Plan",summary:"Summary",confidence:"confidence",differentials:"Differential diagnoses",examine:"Examination / laboratory checks needed",
+    soap:"SOAP",icd:"ICD-10",consultResult:"Specialist consultation result",criteria:"criteria met",referral:"Referral",
+    override:"Referral level was set by rules, not the model",modelSuggested:"model suggested",startNow:"Start now",referralPoints:"Referral letter points",
+    degraded:"Drafting is off. The case entered the queue without a draft.",case:"Case",patientMessage:"Patient message",gate:"Gate result",
+    noRules:"no rules triggered",noRulesDraft:"No rules triggered. Drafting is allowed.",notes:"Notes for doctor",
+    prescreen:"Pre-screening answers",structured:"Structured data",unparsed:"Unparsed — original text",injected:"Text addressed to the system (ignored by gate)",
+    doctorDraft:"Draft for doctor",accept:"Accept",edit:"Edit",reject:"Reject",consult:"Specialist consult",sign:"Sign",history:"Action history",
+    signed:"Signed by",at:"at",withoutDraft:"without draft",sourceError:"The source could not be loaded.",actionError:"The action failed.",
+    seedError:"The demo could not be loaded.",modeError:"The model mode could not be changed.",
+    noKey:"Real mode selected, but no API key is available. Fill OPENAI_API_KEY in digidoc/local_config.py, then select real again. Without a key, cases still queue but without a draft.",
+    signTitle:"Sign case",signWarn:"Once signed, the case is frozen and cannot be changed.",
+    signField:"Doctor name",signConfirm:"Sign",signPlaceholder:"e.g. Sari",
+    editTitle:"Edit assessment",editField:"Assessment for the doctor",editConfirm:"Save",
+    cancel:"Cancel",required:"A doctor name is required.",working:"Working…",consulting:"Running consult…",
+    themeToDark:"Dark mode",themeToLight:"Light mode"}
+};
+const t = key => COPY[language][key];
+const routeLabel = route => COPY[language].routes[route];
+// Field labels, intake values, gate text and action history are translated by the server,
+// which knows which language each stored draft was written in.
+const withLang = url => url + (url.includes("?") ? "&" : "?") + "language=" + language;
+
+// ---------------------------------------------------------------------------
+// Render
+// ---------------------------------------------------------------------------
+let activeId = null;
+let queueItems = [];
+let currentCase = null;
+
+function renderQueue(items){
+  const el = document.getElementById("queue");
+  document.getElementById("queueCount").textContent = items.length || "";
+  if(!items.length){ el.innerHTML = `<div class="empty">${t("empty")}</div>`; return; }
+  el.innerHTML = items.map(c => `
+    <div class="row ${c.route} ${c.id===activeId?'active':''}" data-id="${c.id}" tabindex="0" role="button">
+      <span class="id">${c.id}</span><span class="age">${c.age}</span>
+      <span class="who">${c.who} · ${routeLabel(c.route)}${c.degraded?` · ${t("withoutDraft")}`:''}</span>
+    </div>`).join("");
+  el.querySelectorAll(".row").forEach(r => r.addEventListener("click", () => openCase(r.dataset.id)));
+}
+
+function cite(n){ return `<span class="cite" data-cite="${n}" role="button" tabindex="0">${n}</span>`; }
+function withCites(text){ return text.replace(/\[(\d+)\]/g, (_, n) => cite(n)); }
+
+function renderCase(c){
+  const el = document.getElementById("case");
+  if(!c){ el.innerHTML = `<p style="color:var(--ink-2)">${t("choose")}</p>`; return; }
+  const noDraftRoutes = COPY[language].noDraft;
+  const d = c.draft;
+  let draftHtml = "";
+  if(c.degraded){
+    draftHtml = `<p class="badge mode">${t("modelOff")}</p><p>${t("rawOnly")}</p>`;
+  } else if(noDraftRoutes[c.route]){
+    draftHtml = `<p>${t("noDraftPrefix")} ${noDraftRoutes[c.route]}</p>`;
+  } else if(d){
+    const modeLabel = d.abstain ? '<span class="badge abstain">Abstain</span>' : `<span class="badge mode">${d.mode==="plan"?t("plan"):t("summary")}</span>`;
+    draftHtml = `
+      <div class="draft">
+        <p>${modeLabel} <span style="color:var(--ink-2);margin-left:8px">${t("confidence")} ${Math.round(d.confidence*100)}%</span></p>
+        ${d.language_note?`<p class="langnote">${d.language_note}</p>`:""}
+        ${d.abstain_reason?`<p style="color:var(--r-urgent)">${d.abstain_reason}</p>`:""}
+        <p>${withCites(d.assessment)}</p>
+        <h2 style="margin-top:16px">${t("differentials")}</h2>
+        <ul class="list">${d.differentials.map(x=>`<li>${x}</li>`).join("")}</ul>
+        ${d.examine?.length?`<h2 style="margin-top:16px">${t("examine")}</h2><ul class="list">${d.examine.map(x=>`<li>${x}</li>`).join("")}</ul>`:""}
+        ${d.plan?.length?`<h2 style="margin-top:16px">${t("plan")}</h2><ul class="list">${d.plan.map(p=>`<li>${p.text}${cite(p.cite)}</li>`).join("")}</ul>`:""}
+        <h2 style="margin-top:16px">${t("soap")}</h2>
+        <div class="soap">${["S","O","A","P"].map(k=>`<b>${k}</b><span>${d.soap[k]||"—"}</span>`).join("")}</div>
+        <h2 style="margin-top:16px">${t("icd")}</h2>
+        <div class="codes">${d.icd10.map(x=>`<span><b>${x.code}</b>${x.label}</span>`).join("")}</div>
+      </div>`;
+  }
+
+  const l2 = c.layer2?.result;
+  const l2Html = l2 ? `
+    <section><h2>${t("consultResult")} · ${l2.module}</h2>
+      ${l2.language_note?`<p class="langnote">${l2.language_note}</p>`:""}
+      <p><b>${l2.grade.system} ${l2.grade.value}</b> — ${t("criteria")}: ${l2.grade.criteria_met.join(", ")}</p>
+      <p>${t("referral")}: <span class="badge ${l2.referral==="urgent"?"urgent_same_day":l2.referral==="emergency"?"emergency":"routine"}">${l2.referral}</span> — ${l2.referral_reason}</p>
+      ${l2.override?`<p style="color:var(--r-urgent)">${t("override")} (${t("modelSuggested")} ${l2.model_said}).</p>`:""}
+      <h2 style="margin-top:12px">${t("startNow")}</h2><ul class="list">${l2.start_now.map(s=>`<li>${s.text}${cite(s.cite)}</li>`).join("")}</ul>
+      <h2 style="margin-top:12px">${t("referralPoints")}</h2><ul class="list">${l2.referral_letter_points.map(s=>`<li>${s}</li>`).join("")}</ul>
+    </section>` : "";
+
+  const pre = c.prescreen;
+
+  el.innerHTML = `
+    ${c.degraded?`<div class="banner">${t("degraded")}</div>`:""}
+    <h1>${t("case")} ${c.id} · ${c.who}</h1>
+    <div class="meta">${c.age}</div>
+    <div><span class="badge ${c.route}">${routeLabel(c.route)}</span><span class="hits">${c.hits.map(h=>h.rule_id).join(" · ")||t("noRules")}</span></div>
+
+    <div class="${c.signed?'signed-body':''}" style="margin-top:8px">
+    <section><h2>${t("patientMessage")}</h2><div class="well">${c.message}</div></section>
+
+    <section><h2>${t("gate")}</h2>
+      ${c.hits.length ? c.hits.map(h=>`
+        <div class="rule">
+          <span class="rid">${h.rule_id}</span>
+          <span class="badge ${h.route} route">${routeLabel(h.route)}</span>
+          <span class="name">${h.name}</span>
+          <span class="why">${h.reason}</span>
+          <span class="src">${h.guideline}</span>
+        </div>`).join("") : `<p style="color:var(--ink-2)">${t("noRulesDraft")}</p>`}
+      ${c.notes?.length?`<p style="color:var(--ink-2)">${t("notes")}: ${c.notes.join(" ")}</p>`:""}
+    </section>
+
+    ${pre?.length?`<section><h2>${t("prescreen")}</h2><ul class="list">${pre.map(x=>`<li>${x}</li>`).join("")}</ul></section>`:""}
+
+    <section><h2>${t("structured")}</h2>
+      <div class="fields">${c.intake.fields.map(([k,v,conf])=>`<span class="k">${k}</span><span class="v">${v}</span><span class="conf ${conf<0.6?'low':''}" title="${t("confidence")} ${Math.round(conf*100)}%"><i style="width:${conf*100}%"></i></span>`).join("")}</div>
+      ${c.intake.unparsed?.length?`<div class="well" style="margin-top:12px"><span class="cap">${t("unparsed")}</span>${c.intake.unparsed.map(s=>`“${s}”`).join("  ")}</div>`:""}
+      ${c.intake.injected?.length?`<div class="well danger" style="margin-top:12px"><span class="cap">${t("injected")}</span>${c.intake.injected.map(s=>`“${s}”`).join("  ")}</div>`:""}
+    </section>
+
+    <section><h2>${t("doctorDraft")}</h2>${draftHtml}</section>
+    ${l2Html}
+    </div>
+
+    <div class="actions">
+      ${c.signed ? `<span class="signed">${t("signed")} ${c.signed.by} ${t("at")} ${c.signed.at}</span>` : `
+        <button data-act="accept">${t("accept")}</button>
+        <button data-act="edit">${t("edit")}</button>
+        <button data-act="reject">${t("reject")}</button>
+        <span class="spacer"></span>
+        ${c.layer2?.available?.length && !c.layer2.result?`<button data-act="consult">${t("consult")} · ${c.layer2.available[0].replace("_"," ")}</button>`:""}
+        <button class="primary" data-act="sign">${t("sign")}</button>`}
+    </div>
+
+    <section><h2>${t("history")}</h2><div class="log">${c.log.map(l=>`<div><time>${l.t}</time>${l.who} — ${l.what}</div>`).join("")}</div></section>
+  `;
+
+  el.querySelectorAll("[data-cite]").forEach(s => s.addEventListener("click", () => openCite(c, s.dataset.cite)));
+  el.querySelectorAll("[data-act]").forEach(b => b.addEventListener("click", () => act(c, b.dataset.act, b)));
+}
+
+async function openCite(c, n){
+  const src = c.draft?.citations?.[n] || c.layer2?.result?.citations?.[n];
+  if(!src) return;
+  const response = await fetch(withLang(`/corpus/${encodeURIComponent(src.key)}/${encodeURIComponent(src.section)}`));
+  if(!response.ok){ alert(t("sourceError")); return; }
+  const chunk = await response.json();
+  document.getElementById("panelTitle").textContent = chunk.title;
+  document.getElementById("panelSrc").textContent = `${chunk.key} §${chunk.section}`;
+  const note = document.getElementById("panelNote");
+  note.textContent = chunk.source_note || "";
+  note.hidden = !chunk.source_note;
+  document.getElementById("panelBody").textContent = chunk.text;
+  const p = document.getElementById("panel"); p.classList.add("open"); p.setAttribute("aria-hidden","false");
+}
+document.getElementById("panelClose").addEventListener("click", () => { const p=document.getElementById("panel"); p.classList.remove("open"); p.setAttribute("aria-hidden","true"); });
+
+// Signing is the medico-legal moment, so it asks inside the page rather than through a
+// native prompt(): a browser can suppress those silently, and the freeze warning belongs
+// somewhere the doctor actually reads it.
+function ask({title, warn, label, value = "", placeholder = "", confirm, multiline = false, required = false}){
+  const dialog = document.getElementById("ask");
+  const input = document.getElementById(multiline ? "askArea" : "askInput");
+  const unused = document.getElementById(multiline ? "askInput" : "askArea");
+  const err = document.getElementById("askErr");
+  const warnEl = document.getElementById("askWarn");
+  document.getElementById("askTitle").textContent = title;
+  warnEl.textContent = warn || ""; warnEl.hidden = !warn;
+  document.getElementById("askLabel").textContent = label;
+  document.getElementById("askLabel").setAttribute("for", input.id);
+  document.getElementById("askOk").textContent = confirm;
+  document.getElementById("askCancel").textContent = t("cancel");
+  err.hidden = true;
+  unused.hidden = true; input.hidden = false;
+  input.value = value; input.placeholder = placeholder;
+
+  return new Promise(resolve => {
+    let settled = false;
+    const finish = result => {
+      if(settled) return;
+      settled = true;
+      form.removeEventListener("submit", onSubmit);
+      cancel.removeEventListener("click", onCancel);
+      dialog.removeEventListener("close", onCancel);
+      dialog.open && dialog.close();
+      resolve(result);
+    };
+    const form = document.getElementById("askForm");
+    const cancel = document.getElementById("askCancel");
+    const onSubmit = event => {
+      const text = input.value.trim();
+      if(required && !text){
+        event.preventDefault();
+        err.textContent = t("required"); err.hidden = false; input.focus();
+        return;
+      }
+      finish(multiline ? input.value : text);
+    };
+    const onCancel = () => finish(null);
+    form.addEventListener("submit", onSubmit);
+    cancel.addEventListener("click", onCancel);
+    dialog.addEventListener("close", onCancel);
+    dialog.showModal();
+    input.focus();
+    if(!multiline) input.select();
+  });
+}
+
+// A consult is a model call, so it can take a while. Freeze the whole action row rather
+// than just the button pressed: signing a case while a consult is still writing to it
+// would race, and a second click would try to run the consult twice.
+function busy(button, label){
+  const row = button.closest(".actions");
+  const buttons = [...row.querySelectorAll("button")];
+  const markup = button.innerHTML;
+  buttons.forEach(b => b.disabled = true);
+  button.classList.add("busy");
+  button.innerHTML = `<span class="spin"></span>${label}`;
+  return () => {
+    if(!button.isConnected) return;  // the case re-rendered; nothing to restore
+    buttons.forEach(b => b.disabled = false);
+    button.classList.remove("busy");
+    button.innerHTML = markup;
+  };
+}
+
+async function act(c, action, button){
+  let payload = {};
+  if(action==="sign"){
+    const name = await ask({
+      title:t("signTitle"), warn:t("signWarn"), label:t("signField"),
+      placeholder:t("signPlaceholder"), confirm:t("signConfirm"), required:true
+    });
+    if(!name) return;
+    payload.doctor_id = `dr. ${name}`;
+  } else if(action==="edit"){
+    const assessment = await ask({
+      title:t("editTitle"), label:t("editField"), value:c.draft?.assessment || "",
+      confirm:t("editConfirm"), multiline:true
+    });
+    if(assessment===null) return;
+    payload.assessment = assessment;
+  } else if(action==="consult"){
+    payload.module = c.layer2.available[0];
+  }
+  const done = busy(button, t(action==="consult" ? "consulting" : "working"));
+  let response;
+  try{
+    response = await fetch(`/case/${encodeURIComponent(c.id)}/action`, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({action, payload, language})
+    });
+  }catch(e){
+    done(); alert(t("actionError")); return;
+  }
+  if(!response.ok){
+    const error = await response.json().catch(()=>({detail:t("actionError")}));
+    done(); alert(error.detail || t("actionError")); return;
+  }
+  currentCase = await response.json();
+  renderCase(currentCase);
+  done();
+  await loadQueue();
+}
+
+async function openCase(id){
+  activeId = id;
+  renderQueue(queueItems);
+  const response = await fetch(withLang(`/case/${encodeURIComponent(id)}`));
+  if(!response.ok){ renderCase(null); return; }
+  currentCase = await response.json();
+  renderCase(currentCase);
+}
+
+async function loadQueue(){
+  const response = await fetch(withLang("/queue"));
+  queueItems = response.ok ? await response.json() : [];
+  renderQueue(queueItems);
+}
+
+document.getElementById("seed").addEventListener("click", async () => {
+  const button = document.getElementById("seed"); button.disabled = true;
+  try{
+    const response = await fetch(withLang("/admin/seed"), {method:"POST"});
+    if(!response.ok) throw new Error();
+    await loadQueue();
+    if(queueItems.length) await openCase(queueItems[0].id);
+  }catch{ alert(t("seedError")); }
+  finally{ button.disabled = false; }
+});
+document.getElementById("modelMode").addEventListener("change", async e => {
+  const response = await fetch("/admin/model_mode", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({mode:e.target.value})
+  });
+  if(!response.ok){ alert(t("modeError")); return; }
+  const state = await response.json();
+  if(state.mode==="real" && !state.key_available) alert(t("noKey"));
+});
+
+function applyChrome(){
+  document.documentElement.lang=language; document.title=t("title");
+  document.getElementById("language").value=language;
+  document.getElementById("languageLabel").textContent=t("language");
+  document.getElementById("queueTitle").textContent=t("queue");
+  document.getElementById("seed").textContent=t("seed");
+  document.getElementById("panelClose").textContent=t("close");
+  document.getElementById("panelClose").setAttribute("aria-label",t("close"));
+  const off=document.querySelector('#modelMode option[value="off"]');
+  off.textContent=language==="en"?"off":"nonaktif";
+  applyThemeLabel();
+  renderQueue(queueItems); renderCase(currentCase);
+}
+
+function applyThemeLabel(){
+  const dark = document.documentElement.dataset.theme === "dark";
+  const label = t(dark ? "themeToLight" : "themeToDark");
+  const button = document.getElementById("theme");
+  button.setAttribute("aria-label", label);
+  button.setAttribute("title", label);
+  button.setAttribute("aria-pressed", String(dark));
+}
+
+document.getElementById("theme").addEventListener("click", () => {
+  const root = document.documentElement;
+  const dark = root.dataset.theme === "dark";
+  if(dark) delete root.dataset.theme; else root.dataset.theme = "dark";
+  localStorage.setItem("digidoc-theme", dark ? "light" : "dark");
+  applyThemeLabel();
+});
+
+// Field labels, gate reasons and the action log are rendered server-side, so switching
+// language refetches rather than re-rendering what is already in memory.
+async function applyLanguage(){
+  applyChrome();
+  await loadQueue();
+  if(activeId) await openCase(activeId); else renderCase(currentCase);
+}
+document.getElementById("language").addEventListener("change", async e => {
+  language=e.target.value; localStorage.setItem("digidoc-language",language); await applyLanguage();
+});
+
+async function initialise(){
+  applyChrome();
+  const mode = await fetch("/admin/model_mode");
+  if(mode.ok) document.getElementById("modelMode").value = (await mode.json()).mode;
+  await loadQueue();
+  if(queueItems.length) await openCase(queueItems[0].id); else renderCase(null);
+}
+initialise();
+</script>
+</body>
+</html>

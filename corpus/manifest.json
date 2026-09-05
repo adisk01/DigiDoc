@@ -1,0 +1,77 @@
+{
+  "disclaimer": "These files are structured summaries prepared for the DigiDoc prototype. They are not the official guidelines. Production must ingest the full published PDFs (PNPK / Kemenkes / WHO / PERKENI / POGI / PERKI / Fornas) and version them. Do not use these summaries as a substitute for the source documents when treating patients.",
+  "documents": [
+    {
+      "key": "KEMENKES_PPK_FKTP_2022",
+      "title": "Pedoman Praktik Klinis bagi Dokter di Fasilitas Pelayanan Kesehatan Tingkat Pertama (ringkasan prototipe)",
+      "publisher": "Kementerian Kesehatan RI",
+      "year": 2022,
+      "url": "https://www.kemkes.go.id",
+      "version": "prototype-summary-2026",
+      "file": "kemenkes_ppk_fktp_2022.md"
+    },
+    {
+      "key": "KEMENKES_DBD_2017",
+      "title": "Pedoman Pencegahan dan Pengendalian Demam Berdarah Dengue (ringkasan prototipe)",
+      "publisher": "Kementerian Kesehatan RI",
+      "year": 2017,
+      "url": "https://www.kemkes.go.id",
+      "version": "prototype-summary-2026",
+      "file": "kemenkes_dbd_2017.md"
+    },
+    {
+      "key": "PERKENI_KAKI_DIABETIK_2021",
+      "title": "Konsensus pengelolaan kaki diabetik (ringkasan prototipe)",
+      "publisher": "PERKENI",
+      "year": 2021,
+      "url": "https://www.perkeni.or.id",
+      "version": "prototype-summary-2026",
+      "file": "perkeni_kaki_diabetik_2021.md"
+    },
+    {
+      "key": "WHO_IMCI_2014",
+      "title": "Integrated Management of Childhood Illness — general danger signs (prototype summary)",
+      "publisher": "World Health Organization",
+      "year": 2014,
+      "url": "https://www.who.int",
+      "version": "prototype-summary-2026",
+      "file": "who_imci_2014.md"
+    },
+    {
+      "key": "POGI_HDK_2016",
+      "title": "Hipertensi dalam kehamilan / preeklampsia (ringkasan prototipe)",
+      "publisher": "POGI",
+      "year": 2016,
+      "url": "https://pogi.or.id",
+      "version": "prototype-summary-2026",
+      "file": "pogi_hdk_2016.md"
+    },
+    {
+      "key": "PERKI_ACS_2018",
+      "title": "Sindrom koroner akut — penilaian awal (ringkasan prototipe)",
+      "publisher": "PERKI",
+      "year": 2018,
+      "url": "https://www.inaheart.org",
+      "version": "prototype-summary-2026",
+      "file": "perki_acs_2018.md"
+    },
+    {
+      "key": "KEMENKES_TIFOID_2006",
+      "title": "Demam tifoid — pendekatan di pelayanan primer (ringkasan prototipe)",
+      "publisher": "Kementerian Kesehatan RI",
+      "year": 2006,
+      "url": "https://www.kemkes.go.id",
+      "version": "prototype-summary-2026",
+      "file": "kemenkes_tifoid_2006.md"
+    },
+    {
+      "key": "FORNAS_2023",
+      "title": "Formularium Nasional — prinsip dan nama obat primer (ringkasan prototipe)",
+      "publisher": "Kementerian Kesehatan RI",
+      "year": 2023,
+      "url": "https://www.kemkes.go.id",
+      "version": "prototype-summary-2026",
+      "file": "fornas_2023.md"
+    }
+  ]
+}
