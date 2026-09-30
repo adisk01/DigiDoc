@@ -1,4 +1,4 @@
-# DigiDoc — a digital GP for Indonesian primary care
+# DigiDoc — a digital GP
 
 Prototype for the SaxeCap FDE assignment. Start with [docs/ONE-PAGER.md](docs/ONE-PAGER.md).
 
@@ -100,3 +100,6 @@ error messages. Two things do not move, by design:
   above the draft.
 
 Build status: steps 1–8 done. Steps 9–10 are demo/deck, not code.
+
+Completed
+of no use
